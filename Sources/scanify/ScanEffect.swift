@@ -4,15 +4,16 @@ import Foundation
 
 struct ScanPreset {
     let name: String
-    let rotationRange: ClosedRange<Double>  // degrees
-    let noiseIntensity: Double              // 0.0 - 1.0
-    let contrastAdjustment: Double          // 0.9 - 1.2 typical
-    let brightnessAdjustment: Double        // -0.1 to 0.1 typical
-    let saturationAdjustment: Double        // 0.0 - 1.0 (0 = grayscale)
-    let blurRadius: Double                  // 0.0 - 2.0 typical
-    let paperDarkening: Double              // How much to darken whites (0.0 - 0.15)
-    let edgeShadow: Double                  // Edge shadow intensity
-    let unevenLighting: Double              // Lighting variation
+    let rotationRange: ClosedRange<Double>
+    let noiseIntensity: Double
+    let contrastAdjustment: Double
+    let brightnessAdjustment: Double
+    let saturationAdjustment: Double
+    let blurRadius: Double
+    let paperDarkening: Double
+    let edgeShadow: Double
+    let unevenLighting: Double
+    var applyWarp: Bool  // Paper bend/warp effect
 
     static let `default` = ScanPreset(
         name: "default",
@@ -24,7 +25,8 @@ struct ScanPreset {
         blurRadius: 0.3,
         paperDarkening: 0.06,
         edgeShadow: 0.4,
-        unevenLighting: 0.08
+        unevenLighting: 0.08,
+        applyWarp: false
     )
 
     static let aggressive = ScanPreset(
@@ -37,7 +39,8 @@ struct ScanPreset {
         blurRadius: 0.6,
         paperDarkening: 0.12,
         edgeShadow: 0.6,
-        unevenLighting: 0.15
+        unevenLighting: 0.15,
+        applyWarp: false
     )
 }
 
@@ -52,10 +55,15 @@ class ScanEffect {
         var ciImage = CIImage(cgImage: image)
         let originalExtent = ciImage.extent
 
-        // 1. Darken the whites slightly (scanned paper is never pure white)
+        // 1. Apply paper warp/bend effect first (if enabled)
+        if preset.applyWarp {
+            ciImage = applyPaperWarp(to: ciImage, extent: originalExtent)
+        }
+
+        // 2. Darken the whites slightly (scanned paper is never pure white)
         ciImage = darkenWhites(ciImage, amount: preset.paperDarkening)
 
-        // 2. Apply color adjustments (contrast, brightness, saturation)
+        // 3. Apply color adjustments (contrast, brightness, saturation)
         if let colorFilter = CIFilter(name: "CIColorControls") {
             colorFilter.setValue(ciImage, forKey: kCIInputImageKey)
             colorFilter.setValue(preset.contrastAdjustment, forKey: kCIInputContrastKey)
@@ -66,7 +74,7 @@ class ScanEffect {
             }
         }
 
-        // 3. Apply subtle blur (simulates scan imperfection)
+        // 4. Apply subtle blur (simulates scan imperfection)
         if preset.blurRadius > 0 {
             let clamped = ciImage.clampedToExtent()
             if let blurFilter = CIFilter(name: "CIGaussianBlur") {
@@ -78,22 +86,22 @@ class ScanEffect {
             }
         }
 
-        // 4. Add noise/grain
+        // 5. Add noise/grain
         if preset.noiseIntensity > 0 {
             ciImage = addNoise(to: ciImage, intensity: preset.noiseIntensity, extent: originalExtent)
         }
 
-        // 5. Add uneven lighting (scanner light isn't perfectly uniform)
+        // 6. Add uneven lighting (scanner light isn't perfectly uniform)
         if preset.unevenLighting > 0 {
             ciImage = addUnevenLighting(to: ciImage, intensity: preset.unevenLighting, extent: originalExtent)
         }
 
-        // 6. Add edge shadows (from scanner lid/edges)
+        // 7. Add edge shadows (from scanner lid/edges)
         if preset.edgeShadow > 0 {
             ciImage = addEdgeShadows(to: ciImage, intensity: preset.edgeShadow, extent: originalExtent)
         }
 
-        // 7. Apply slight rotation
+        // 8. Apply slight rotation
         let rotation = Double.random(in: preset.rotationRange)
         if abs(rotation) > 0.01 {
             let radians = rotation * .pi / 180.0
@@ -115,13 +123,107 @@ class ScanEffect {
         return cgImage
     }
 
+    /// Apply paper warp/bend effect - simulates a phone photo of curved paper
+    private func applyPaperWarp(to image: CIImage, extent: CGRect) -> CIImage {
+        var result = image
+
+        // Create multiple subtle bump distortions to simulate paper curve
+        // Randomize the warp direction and position
+
+        let warpType = Int.random(in: 0...2)  // Different warp styles
+
+        switch warpType {
+        case 0:
+            // Horizontal wave - paper bent along horizontal axis
+            result = applyHorizontalWarp(to: result, extent: extent)
+        case 1:
+            // Vertical wave - paper bent along vertical axis
+            result = applyVerticalWarp(to: result, extent: extent)
+        default:
+            // Corner lift - one corner lifted
+            result = applyCornerWarp(to: result, extent: extent)
+        }
+
+        return result.cropped(to: extent)
+    }
+
+    /// Horizontal paper bend (like paper curling top-to-bottom)
+    private func applyHorizontalWarp(to image: CIImage, extent: CGRect) -> CIImage {
+        var result = image
+
+        // Very subtle wave using single gentle bump
+        let bumpRadius = extent.width * 0.8
+        let bumpScale = CGFloat(Double.random(in: 0.15...0.25))  // Very subtle!
+
+        guard let bumpFilter = CIFilter(name: "CIBumpDistortion") else {
+            return result
+        }
+
+        // Single centered bump for gentle curve
+        let xPos = extent.midX + CGFloat(Double.random(in: -50...50))
+        let yPos = extent.midY
+
+        bumpFilter.setValue(result.clampedToExtent(), forKey: kCIInputImageKey)
+        bumpFilter.setValue(CIVector(x: xPos, y: yPos), forKey: kCIInputCenterKey)
+        bumpFilter.setValue(bumpRadius, forKey: kCIInputRadiusKey)
+        bumpFilter.setValue(bumpScale, forKey: kCIInputScaleKey)
+
+        return bumpFilter.outputImage ?? result
+    }
+
+    /// Vertical paper bend (like paper curling left-to-right)
+    private func applyVerticalWarp(to image: CIImage, extent: CGRect) -> CIImage {
+        var result = image
+
+        let bumpRadius = extent.height * 0.7
+        let bumpScale = CGFloat(Double.random(in: 0.12...0.22))
+
+        guard let bumpFilter = CIFilter(name: "CIBumpDistortion") else {
+            return result
+        }
+
+        let xPos = extent.midX
+        let yPos = extent.midY + CGFloat(Double.random(in: -50...50))
+
+        bumpFilter.setValue(result.clampedToExtent(), forKey: kCIInputImageKey)
+        bumpFilter.setValue(CIVector(x: xPos, y: yPos), forKey: kCIInputCenterKey)
+        bumpFilter.setValue(bumpRadius, forKey: kCIInputRadiusKey)
+        bumpFilter.setValue(bumpScale, forKey: kCIInputScaleKey)
+
+        return bumpFilter.outputImage ?? result
+    }
+
+    /// Corner lift effect - one corner of paper is slightly lifted
+    private func applyCornerWarp(to image: CIImage, extent: CGRect) -> CIImage {
+        // Pick a random corner area
+        let corners: [(CGFloat, CGFloat)] = [
+            (extent.minX + extent.width * 0.2, extent.minY + extent.height * 0.2),
+            (extent.maxX - extent.width * 0.2, extent.minY + extent.height * 0.2),
+            (extent.minX + extent.width * 0.2, extent.maxY - extent.height * 0.2),
+            (extent.maxX - extent.width * 0.2, extent.maxY - extent.height * 0.2),
+        ]
+
+        let corner = corners[Int.random(in: 0..<corners.count)]
+        let bumpRadius = min(extent.width, extent.height) * 0.4
+        let bumpScale = CGFloat(Double.random(in: 0.18...0.28))
+
+        guard let bumpFilter = CIFilter(name: "CIBumpDistortion") else {
+            return image
+        }
+
+        bumpFilter.setValue(image.clampedToExtent(), forKey: kCIInputImageKey)
+        bumpFilter.setValue(CIVector(x: corner.0, y: corner.1), forKey: kCIInputCenterKey)
+        bumpFilter.setValue(bumpRadius, forKey: kCIInputRadiusKey)
+        bumpFilter.setValue(bumpScale, forKey: kCIInputScaleKey)
+
+        return bumpFilter.outputImage ?? image
+    }
+
     /// Darken whites to simulate scanned paper (never pure white)
     private func darkenWhites(_ image: CIImage, amount: Double) -> CIImage {
-        // Use gamma adjustment to darken highlights
         guard let gammaFilter = CIFilter(name: "CIGammaAdjust") else {
             return image
         }
-        // Gamma > 1 darkens the image, especially highlights
         gammaFilter.setValue(image, forKey: kCIInputImageKey)
         gammaFilter.setValue(1.0 + amount * 2, forKey: "inputPower")
 
@@ -163,9 +265,7 @@ class ScanEffect {
         return blendFilter.outputImage?.cropped(to: extent) ?? image
     }
 
-    /// Add uneven lighting to simulate imperfect scanner illumination
     private func addUnevenLighting(to image: CIImage, intensity: Double, extent: CGRect) -> CIImage {
-        // Create a subtle radial gradient that's slightly off-center
         let centerX = extent.midX + extent.width * CGFloat(Double.random(in: -0.1...0.1))
         let centerY = extent.midY + extent.height * CGFloat(Double.random(in: -0.1...0.1))
 
@@ -178,7 +278,6 @@ class ScanEffect {
         gradientFilter.setValue(radius * 0.2, forKey: "inputRadius0")
         gradientFilter.setValue(radius, forKey: "inputRadius1")
 
-        // Inner color: slightly brighter, outer: slightly darker
         let brightVal = CGFloat(1.0)
         let darkVal = CGFloat(1.0 - intensity)
         gradientFilter.setValue(CIColor(red: brightVal, green: brightVal, blue: brightVal), forKey: "inputColor0")
@@ -188,7 +287,6 @@ class ScanEffect {
             return image
         }
 
-        // Multiply blend the gradient with the image
         guard let multiplyFilter = CIFilter(name: "CIMultiplyCompositing") else {
             return image
         }
@@ -199,9 +297,7 @@ class ScanEffect {
         return multiplyFilter.outputImage?.cropped(to: extent) ?? image
     }
 
-    /// Add edge shadows to simulate scanner edges
     private func addEdgeShadows(to image: CIImage, intensity: Double, extent: CGRect) -> CIImage {
-        // Use vignette for overall edge darkening
         guard let vignetteFilter = CIFilter(name: "CIVignette") else {
             return image
         }
@@ -214,13 +310,11 @@ class ScanEffect {
             return image
         }
 
-        // Add additional shadow at top edge (scanner lid shadow)
         result = addTopShadow(to: result, intensity: intensity * 0.5, extent: extent)
 
         return result
     }
 
-    /// Add shadow at top of page (simulates scanner lid shadow)
     private func addTopShadow(to image: CIImage, intensity: Double, extent: CGRect) -> CIImage {
         guard let gradientFilter = CIFilter(name: "CILinearGradient") else {
             return image

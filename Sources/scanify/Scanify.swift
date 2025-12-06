@@ -12,6 +12,9 @@ struct Scanify: ParsableCommand {
     @Flag(name: .long, help: "Apply aggressive scan effects (more noise, rotation, artifacts)")
     var aggressive: Bool = false
 
+    @Flag(name: .long, help: "Add paper warp/bend effect (like a phone photo of curved paper)")
+    var bent: Bool = false
+
     @Argument(help: "Input PDF file path")
     var input: String
 
@@ -43,10 +46,11 @@ struct Scanify: ParsableCommand {
 
         // Process the PDF
         let processor = PDFProcessor()
-        let preset: ScanPreset = aggressive ? .aggressive : .default
+        var preset: ScanPreset = aggressive ? .aggressive : .default
+        preset.applyWarp = bent
 
         print("Processing: \(inputURL.lastPathComponent)")
-        print("Preset: \(preset.name)")
+        print("Preset: \(preset.name)\(bent ? " + bent" : "")")
 
         do {
             try processor.process(input: inputURL, output: outputURL, preset: preset)
