@@ -2,6 +2,26 @@
 
 Transform PDF documents to look like scanned documents.
 
+## Examples
+
+<table>
+<tr>
+<td align="center"><strong>Original</strong></td>
+<td align="center"><strong>Default Scan</strong></td>
+<td align="center"><strong>All Effects</strong></td>
+</tr>
+<tr>
+<td><img src="docs/sample.png" width="250"/></td>
+<td><img src="docs/sample_scanned.png" width="250"/></td>
+<td><img src="docs/sample_all.png" width="250"/></td>
+</tr>
+<tr>
+<td align="center"><code>input.pdf</code></td>
+<td align="center"><code>scanify input.pdf</code></td>
+<td align="center"><code>scanify --aggressive --bent --dusty input.pdf</code></td>
+</tr>
+</table>
+
 ## Installation
 
 ### Homebrew
