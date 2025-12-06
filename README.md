@@ -92,6 +92,13 @@ scanify --aggressive --bent --dusty document.pdf
 
 ### Optional Effects
 
+#### `--aggressive`
+Amplifies all base effects for a more dramatic scan appearance:
+- Stronger rotation (up to 1.5°)
+- More noise and grain
+- Heavier paper darkening
+- More pronounced edge shadows
+
 #### `--bent`
 Adds a horizontal shadow band across the page to simulate paper that isn't perfectly flat on the scanner glass.
 
