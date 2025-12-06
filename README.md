@@ -11,9 +11,9 @@ Transform PDF documents to look like scanned documents.
 <td align="center"><strong>All Effects</strong></td>
 </tr>
 <tr>
-<td><img src="docs/sample.png" width="250"/></td>
-<td><img src="docs/sample_scanned.png" width="250"/></td>
-<td><img src="docs/sample_all.png" width="250"/></td>
+<td><img src="docs/sample.png" height="350"/></td>
+<td><img src="docs/sample_scanned.png" height="350"/></td>
+<td><img src="docs/sample_all.png" height="350"/></td>
 </tr>
 <tr>
 <td align="center"><code>input.pdf</code></td>
