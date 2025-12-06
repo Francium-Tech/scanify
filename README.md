@@ -4,23 +4,20 @@ Transform PDF documents to look like scanned documents.
 
 ## Examples
 
-<table>
-<tr>
-<td align="center"><strong>Original</strong></td>
-<td align="center"><strong>Default Scan</strong></td>
-<td align="center"><strong>All Effects</strong></td>
-</tr>
-<tr>
-<td><img src="docs/sample.png" height="350"/></td>
-<td><img src="docs/sample_scanned.png" height="350"/></td>
-<td><img src="docs/sample_all.png" height="350"/></td>
-</tr>
-<tr>
-<td align="center"><code>input.pdf</code></td>
-<td align="center"><code>scanify input.pdf</code></td>
-<td align="center"><code>scanify --aggressive --bent --dusty input.pdf</code></td>
-</tr>
-</table>
+### Original
+<img src="docs/sample.png" width="600"/>
+
+### Default Scan
+```bash
+scanify input.pdf
+```
+<img src="docs/sample_scanned.png" width="600"/>
+
+### All Effects
+```bash
+scanify --aggressive --bent --dusty input.pdf
+```
+<img src="docs/sample_all.png" width="600"/>
 
 ## Installation
 
