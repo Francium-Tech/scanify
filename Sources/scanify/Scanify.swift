@@ -15,6 +15,9 @@ struct Scanify: ParsableCommand {
     @Flag(name: .long, help: "Add paper warp/bend effect (like a phone photo of curved paper)")
     var bent: Bool = false
 
+    @Flag(name: .long, help: "Add dust specks and particles (like a dirty scanner glass)")
+    var dusty: Bool = false
+
     @Argument(help: "Input PDF file path")
     var input: String
 
@@ -48,9 +51,15 @@ struct Scanify: ParsableCommand {
         let processor = PDFProcessor()
         var preset: ScanPreset = aggressive ? .aggressive : .default
         preset.applyWarp = bent
+        preset.applyDust = dusty
+
+        var effects: [String] = []
+        if bent { effects.append("bent") }
+        if dusty { effects.append("dusty") }
+        let effectsStr = effects.isEmpty ? "" : " + " + effects.joined(separator: " + ")
 
         print("Processing: \(inputURL.lastPathComponent)")
-        print("Preset: \(preset.name)\(bent ? " + bent" : "")")
+        print("Preset: \(preset.name)\(effectsStr)")
 
         do {
             try processor.process(input: inputURL, output: outputURL, preset: preset)

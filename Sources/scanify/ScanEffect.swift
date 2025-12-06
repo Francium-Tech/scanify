@@ -13,7 +13,8 @@ struct ScanPreset {
     let paperDarkening: Double
     let edgeShadow: Double
     let unevenLighting: Double
-    var applyWarp: Bool  // Paper bend/warp effect
+    var applyWarp: Bool   // Paper bend/warp effect
+    var applyDust: Bool   // Dust specks effect
 
     static let `default` = ScanPreset(
         name: "default",
@@ -26,7 +27,8 @@ struct ScanPreset {
         paperDarkening: 0.06,
         edgeShadow: 0.4,
         unevenLighting: 0.08,
-        applyWarp: false
+        applyWarp: false,
+        applyDust: false
     )
 
     static let aggressive = ScanPreset(
@@ -40,7 +42,8 @@ struct ScanPreset {
         paperDarkening: 0.12,
         edgeShadow: 0.6,
         unevenLighting: 0.15,
-        applyWarp: false
+        applyWarp: false,
+        applyDust: false
     )
 }
 
@@ -101,7 +104,12 @@ class ScanEffect {
             ciImage = addEdgeShadows(to: ciImage, intensity: preset.edgeShadow, extent: originalExtent)
         }
 
-        // 8. Apply slight rotation
+        // 8. Add dust specks (if enabled)
+        if preset.applyDust {
+            ciImage = addDustSpecks(to: ciImage, extent: originalExtent)
+        }
+
+        // 9. Apply slight rotation
         let rotation = Double.random(in: preset.rotationRange)
         if abs(rotation) > 0.01 {
             let radians = rotation * .pi / 180.0
