@@ -4,7 +4,7 @@ Transform PDF documents to look like scanned documents.
 
 ## Installation
 
-### Homebrew (coming soon)
+### Homebrew
 
 ```bash
 brew tap Francium-Tech/tap
@@ -32,11 +32,14 @@ scanify document.pdf scanned_output.pdf
 # Aggressive mode - more noise, rotation, artifacts
 scanify --aggressive document.pdf
 
-# Bent paper effect - like a phone photo of curved paper
+# Bent paper effect - shadow band like curved paper
 scanify --bent document.pdf
 
+# Dusty scanner - random dust specks and particles
+scanify --dusty document.pdf
+
 # Combine options
-scanify --aggressive --bent document.pdf
+scanify --aggressive --bent --dusty document.pdf
 ```
 
 ## Options
@@ -44,11 +47,14 @@ scanify --aggressive --bent document.pdf
 | Option | Description |
 |--------|-------------|
 | `--aggressive` | Apply stronger scan effects (more noise, rotation, artifacts) |
-| `--bent` | Add paper warp/bend effect (like a phone photo of curved paper) |
+| `--bent` | Add paper bend shadow effect (like curved paper under a scanner) |
+| `--dusty` | Add random dust specks and hair particles (like a dirty scanner glass) |
 | `--version` | Show version |
 | `--help` | Show help |
 
 ## Effects Applied
+
+### Base Effects (always applied)
 
 | Effect | Description |
 |--------|-------------|
@@ -61,12 +67,16 @@ scanify --aggressive --bent document.pdf
 | Random rotation | Paper feed misalignment |
 | Saturation reduction | Scanner color limitations |
 
-### Bent Paper Effect (`--bent`)
+### Optional Effects
 
-Simulates a phone photo of curved/bent paper with randomized warp styles:
-- Horizontal wave (paper curling top-to-bottom)
-- Vertical wave (paper curling left-to-right)
-- Corner lift (one corner lifted)
+#### `--bent`
+Adds a horizontal shadow band across the page to simulate paper that isn't perfectly flat on the scanner glass.
+
+#### `--dusty`
+Adds random artifacts to simulate a dirty scanner:
+- 15-40 dust specks of varying sizes
+- 0-3 thin hair/fiber lines
+- Randomly scattered (not uniform)
 
 ## Requirements
 

@@ -254,6 +254,101 @@ class ScanEffect {
         return multiply.outputImage?.cropped(to: extent) ?? image
     }
 
+    /// Add random dust specks to simulate dirty scanner glass
+    private func addDustSpecks(to image: CIImage, extent: CGRect) -> CIImage {
+        // We'll draw dust specks by creating a CGContext and drawing random circles
+        let width = Int(extent.width)
+        let height = Int(extent.height)
+
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
+
+        guard let cgContext = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else {
+            return image
+        }
+
+        // Fill with white (transparent dust layer base)
+        cgContext.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+        cgContext.fill(CGRect(x: 0, y: 0, width: width, height: height))
+
+        // Random number of dust specks (15-40 specks)
+        let numSpecks = Int.random(in: 15...40)
+
+        for _ in 0..<numSpecks {
+            // Random position
+            let x = CGFloat.random(in: 0...CGFloat(width))
+            let y = CGFloat.random(in: 0...CGFloat(height))
+
+            // Random size (small specks 1-4 pixels, occasional larger ones up to 8)
+            let size: CGFloat
+            if Double.random(in: 0...1) < 0.85 {
+                size = CGFloat.random(in: 1...4)  // Small specks (85%)
+            } else {
+                size = CGFloat.random(in: 4...8)  // Larger dust (15%)
+            }
+
+            // Random darkness (gray to dark gray)
+            let darkness = CGFloat.random(in: 0.15...0.45)
+
+            cgContext.setFillColor(CGColor(red: darkness, green: darkness, blue: darkness, alpha: 1))
+
+            // Draw the speck - mix of circles and small irregular shapes
+            if Bool.random() {
+                // Circle speck
+                cgContext.fillEllipse(in: CGRect(x: x - size/2, y: y - size/2, width: size, height: size))
+            } else {
+                // Slightly elongated/irregular speck
+                let width = size * CGFloat.random(in: 0.6...1.4)
+                let height = size * CGFloat.random(in: 0.6...1.4)
+                cgContext.fillEllipse(in: CGRect(x: x - width/2, y: y - height/2, width: width, height: height))
+            }
+        }
+
+        // Add a few hair-like thin lines (scanner hair artifacts)
+        let numHairs = Int.random(in: 0...3)
+        for _ in 0..<numHairs {
+            let startX = CGFloat.random(in: 0...CGFloat(width))
+            let startY = CGFloat.random(in: 0...CGFloat(height))
+            let length = CGFloat.random(in: 15...50)
+            let angle = CGFloat.random(in: 0...CGFloat.pi * 2)
+
+            let endX = startX + cos(angle) * length
+            let endY = startY + sin(angle) * length
+
+            let darkness = CGFloat.random(in: 0.2...0.4)
+            cgContext.setStrokeColor(CGColor(red: darkness, green: darkness, blue: darkness, alpha: 1))
+            cgContext.setLineWidth(CGFloat.random(in: 0.5...1.5))
+
+            cgContext.move(to: CGPoint(x: startX, y: startY))
+            cgContext.addLine(to: CGPoint(x: endX, y: endY))
+            cgContext.strokePath()
+        }
+
+        guard let dustImage = cgContext.makeImage() else {
+            return image
+        }
+
+        let dustCIImage = CIImage(cgImage: dustImage)
+
+        // Multiply blend dust with original image
+        guard let multiply = CIFilter(name: "CIMultiplyCompositing") else {
+            return image
+        }
+
+        multiply.setValue(dustCIImage, forKey: kCIInputImageKey)
+        multiply.setValue(image, forKey: kCIInputBackgroundImageKey)
+
+        return multiply.outputImage?.cropped(to: extent) ?? image
+    }
+
     /// Darken whites to simulate scanned paper (never pure white)
     private func darkenWhites(_ image: CIImage, amount: Double) -> CIImage {
         guard let gammaFilter = CIFilter(name: "CIGammaAdjust") else {
