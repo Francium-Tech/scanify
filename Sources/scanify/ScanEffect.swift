@@ -123,100 +123,127 @@ class ScanEffect {
         return cgImage
     }
 
-    /// Apply paper warp/bend effect - simulates a phone photo of curved paper
+    /// Apply paper warp/bend effect - adds shadow band to suggest curved paper
     private func applyPaperWarp(to image: CIImage, extent: CGRect) -> CIImage {
-        var result = image
-
-        // Create multiple subtle bump distortions to simulate paper curve
-        // Randomize the warp direction and position
-
-        let warpType = Int.random(in: 0...2)  // Different warp styles
-
-        switch warpType {
-        case 0:
-            // Horizontal wave - paper bent along horizontal axis
-            result = applyHorizontalWarp(to: result, extent: extent)
-        case 1:
-            // Vertical wave - paper bent along vertical axis
-            result = applyVerticalWarp(to: result, extent: extent)
-        default:
-            // Corner lift - one corner lifted
-            result = applyCornerWarp(to: result, extent: extent)
-        }
-
-        return result.cropped(to: extent)
+        // Always use horizontal bend - most realistic and consistent
+        return addHorizontalBendShadow(to: image, extent: extent)
     }
 
-    /// Horizontal paper bend (like paper curling top-to-bottom)
-    private func applyHorizontalWarp(to image: CIImage, extent: CGRect) -> CIImage {
-        var result = image
+    /// Add horizontal shadow band to suggest paper is bent
+    private func addHorizontalBendShadow(to image: CIImage, extent: CGRect) -> CIImage {
+        // Create a shadow band across the page
+        let bandY = extent.midY + CGFloat(Double.random(in: -extent.height * 0.15...extent.height * 0.15))
+        let bandHeight = extent.height * CGFloat(Double.random(in: 0.25...0.4))
+        let shadowIntensity = CGFloat(Double.random(in: 0.25...0.40))  // Much more visible!
 
-        // Very subtle wave using single gentle bump
-        let bumpRadius = extent.width * 0.8
-        let bumpScale = CGFloat(Double.random(in: 0.15...0.25))  // Very subtle!
+        // Top gradient (light to dark)
+        guard let topGradient = CIFilter(name: "CILinearGradient") else { return image }
+        topGradient.setValue(CIVector(x: extent.midX, y: bandY + bandHeight / 2), forKey: "inputPoint0")
+        topGradient.setValue(CIVector(x: extent.midX, y: bandY), forKey: "inputPoint1")
+        topGradient.setValue(CIColor(red: 1, green: 1, blue: 1, alpha: 1), forKey: "inputColor0")
+        topGradient.setValue(CIColor(red: 1 - shadowIntensity, green: 1 - shadowIntensity, blue: 1 - shadowIntensity, alpha: 1), forKey: "inputColor1")
 
-        guard let bumpFilter = CIFilter(name: "CIBumpDistortion") else {
-            return result
-        }
+        // Bottom gradient (dark to light)
+        guard let bottomGradient = CIFilter(name: "CILinearGradient") else { return image }
+        bottomGradient.setValue(CIVector(x: extent.midX, y: bandY), forKey: "inputPoint0")
+        bottomGradient.setValue(CIVector(x: extent.midX, y: bandY - bandHeight / 2), forKey: "inputPoint1")
+        bottomGradient.setValue(CIColor(red: 1 - shadowIntensity, green: 1 - shadowIntensity, blue: 1 - shadowIntensity, alpha: 1), forKey: "inputColor0")
+        bottomGradient.setValue(CIColor(red: 1, green: 1, blue: 1, alpha: 1), forKey: "inputColor1")
 
-        // Single centered bump for gentle curve
-        let xPos = extent.midX + CGFloat(Double.random(in: -50...50))
-        let yPos = extent.midY
-
-        bumpFilter.setValue(result.clampedToExtent(), forKey: kCIInputImageKey)
-        bumpFilter.setValue(CIVector(x: xPos, y: yPos), forKey: kCIInputCenterKey)
-        bumpFilter.setValue(bumpRadius, forKey: kCIInputRadiusKey)
-        bumpFilter.setValue(bumpScale, forKey: kCIInputScaleKey)
-
-        return bumpFilter.outputImage ?? result
-    }
-
-    /// Vertical paper bend (like paper curling left-to-right)
-    private func applyVerticalWarp(to image: CIImage, extent: CGRect) -> CIImage {
-        var result = image
-
-        let bumpRadius = extent.height * 0.7
-        let bumpScale = CGFloat(Double.random(in: 0.12...0.22))
-
-        guard let bumpFilter = CIFilter(name: "CIBumpDistortion") else {
-            return result
-        }
-
-        let xPos = extent.midX
-        let yPos = extent.midY + CGFloat(Double.random(in: -50...50))
-
-        bumpFilter.setValue(result.clampedToExtent(), forKey: kCIInputImageKey)
-        bumpFilter.setValue(CIVector(x: xPos, y: yPos), forKey: kCIInputCenterKey)
-        bumpFilter.setValue(bumpRadius, forKey: kCIInputRadiusKey)
-        bumpFilter.setValue(bumpScale, forKey: kCIInputScaleKey)
-
-        return bumpFilter.outputImage ?? result
-    }
-
-    /// Corner lift effect - one corner of paper is slightly lifted
-    private func applyCornerWarp(to image: CIImage, extent: CGRect) -> CIImage {
-        // Pick a random corner area
-        let corners: [(CGFloat, CGFloat)] = [
-            (extent.minX + extent.width * 0.2, extent.minY + extent.height * 0.2),
-            (extent.maxX - extent.width * 0.2, extent.minY + extent.height * 0.2),
-            (extent.minX + extent.width * 0.2, extent.maxY - extent.height * 0.2),
-            (extent.maxX - extent.width * 0.2, extent.maxY - extent.height * 0.2),
-        ]
-
-        let corner = corners[Int.random(in: 0..<corners.count)]
-        let bumpRadius = min(extent.width, extent.height) * 0.4
-        let bumpScale = CGFloat(Double.random(in: 0.18...0.28))
-
-        guard let bumpFilter = CIFilter(name: "CIBumpDistortion") else {
+        guard let topGrad = topGradient.outputImage?.cropped(to: CGRect(x: extent.minX, y: bandY, width: extent.width, height: bandHeight / 2 + extent.height)),
+              let bottomGrad = bottomGradient.outputImage?.cropped(to: CGRect(x: extent.minX, y: extent.minY, width: extent.width, height: bandY - extent.minY)) else {
             return image
         }
 
-        bumpFilter.setValue(image.clampedToExtent(), forKey: kCIInputImageKey)
-        bumpFilter.setValue(CIVector(x: corner.0, y: corner.1), forKey: kCIInputCenterKey)
-        bumpFilter.setValue(bumpRadius, forKey: kCIInputRadiusKey)
-        bumpFilter.setValue(bumpScale, forKey: kCIInputScaleKey)
+        // Combine gradients
+        guard let combine = CIFilter(name: "CISourceOverCompositing") else { return image }
+        combine.setValue(topGrad, forKey: kCIInputImageKey)
+        combine.setValue(bottomGrad, forKey: kCIInputBackgroundImageKey)
 
-        return bumpFilter.outputImage ?? image
+        guard let combined = combine.outputImage else { return image }
+
+        // Create full white background and composite the shadow band
+        let whiteImage = CIImage(color: CIColor.white).cropped(to: extent)
+        guard let finalGradient = CIFilter(name: "CISourceOverCompositing") else { return image }
+        finalGradient.setValue(combined, forKey: kCIInputImageKey)
+        finalGradient.setValue(whiteImage, forKey: kCIInputBackgroundImageKey)
+
+        guard let shadowMask = finalGradient.outputImage?.cropped(to: extent) else { return image }
+
+        // Multiply blend with original
+        guard let multiply = CIFilter(name: "CIMultiplyCompositing") else { return image }
+        multiply.setValue(shadowMask, forKey: kCIInputImageKey)
+        multiply.setValue(image, forKey: kCIInputBackgroundImageKey)
+
+        return multiply.outputImage?.cropped(to: extent) ?? image
+    }
+
+    /// Add vertical shadow band to suggest paper is bent
+    private func addVerticalBendShadow(to image: CIImage, extent: CGRect) -> CIImage {
+        let bandX = extent.midX + CGFloat(Double.random(in: -extent.width * 0.1...extent.width * 0.1))
+        let bandWidth = extent.width * CGFloat(Double.random(in: 0.3...0.5))
+        let shadowIntensity = CGFloat(Double.random(in: 0.20...0.35))  // Much more visible!
+
+        // Left gradient
+        guard let leftGradient = CIFilter(name: "CILinearGradient") else { return image }
+        leftGradient.setValue(CIVector(x: bandX - bandWidth / 2, y: extent.midY), forKey: "inputPoint0")
+        leftGradient.setValue(CIVector(x: bandX, y: extent.midY), forKey: "inputPoint1")
+        leftGradient.setValue(CIColor(red: 1, green: 1, blue: 1, alpha: 1), forKey: "inputColor0")
+        leftGradient.setValue(CIColor(red: 1 - shadowIntensity, green: 1 - shadowIntensity, blue: 1 - shadowIntensity, alpha: 1), forKey: "inputColor1")
+
+        // Right gradient
+        guard let rightGradient = CIFilter(name: "CILinearGradient") else { return image }
+        rightGradient.setValue(CIVector(x: bandX, y: extent.midY), forKey: "inputPoint0")
+        rightGradient.setValue(CIVector(x: bandX + bandWidth / 2, y: extent.midY), forKey: "inputPoint1")
+        rightGradient.setValue(CIColor(red: 1 - shadowIntensity, green: 1 - shadowIntensity, blue: 1 - shadowIntensity, alpha: 1), forKey: "inputColor0")
+        rightGradient.setValue(CIColor(red: 1, green: 1, blue: 1, alpha: 1), forKey: "inputColor1")
+
+        guard let leftGrad = leftGradient.outputImage?.cropped(to: extent),
+              let rightGrad = rightGradient.outputImage?.cropped(to: extent) else {
+            return image
+        }
+
+        // Use minimum to combine (darker wins)
+        guard let minFilter = CIFilter(name: "CIDarkenBlendMode") else { return image }
+        minFilter.setValue(leftGrad, forKey: kCIInputImageKey)
+        minFilter.setValue(rightGrad, forKey: kCIInputBackgroundImageKey)
+
+        guard let shadowMask = minFilter.outputImage?.cropped(to: extent) else { return image }
+
+        guard let multiply = CIFilter(name: "CIMultiplyCompositing") else { return image }
+        multiply.setValue(shadowMask, forKey: kCIInputImageKey)
+        multiply.setValue(image, forKey: kCIInputBackgroundImageKey)
+
+        return multiply.outputImage?.cropped(to: extent) ?? image
+    }
+
+    /// Add corner shadow to suggest corner is lifted
+    private func addCornerBendShadow(to image: CIImage, extent: CGRect) -> CIImage {
+        // Pick a random corner
+        let isLeft = Bool.random()
+        let isTop = Bool.random()
+
+        let cornerX = isLeft ? extent.minX : extent.maxX
+        let cornerY = isTop ? extent.maxY : extent.minY
+
+        let radius = min(extent.width, extent.height) * CGFloat(Double.random(in: 0.35...0.55))
+        let shadowIntensity = CGFloat(Double.random(in: 0.25...0.40))  // Much more visible!
+
+        guard let radialGradient = CIFilter(name: "CIRadialGradient") else { return image }
+
+        radialGradient.setValue(CIVector(x: cornerX, y: cornerY), forKey: "inputCenter")
+        radialGradient.setValue(0, forKey: "inputRadius0")
+        radialGradient.setValue(radius, forKey: "inputRadius1")
+        radialGradient.setValue(CIColor(red: 1 - shadowIntensity, green: 1 - shadowIntensity, blue: 1 - shadowIntensity, alpha: 1), forKey: "inputColor0")
+        radialGradient.setValue(CIColor(red: 1, green: 1, blue: 1, alpha: 1), forKey: "inputColor1")
+
+        guard let shadowMask = radialGradient.outputImage?.cropped(to: extent) else { return image }
+
+        guard let multiply = CIFilter(name: "CIMultiplyCompositing") else { return image }
+        multiply.setValue(shadowMask, forKey: kCIInputImageKey)
+        multiply.setValue(image, forKey: kCIInputBackgroundImageKey)
+
+        return multiply.outputImage?.cropped(to: extent) ?? image
     }
 
     /// Darken whites to simulate scanned paper (never pure white)
