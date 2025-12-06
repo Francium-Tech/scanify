@@ -6,7 +6,7 @@ struct Scanify: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "scanify",
         abstract: "Transform PDFs to look like scanned documents",
-        version: "0.1.0"
+        version: "1.0.0"
     )
 
     @Flag(name: .long, help: "Apply aggressive scan effects (more noise, rotation, artifacts)")
