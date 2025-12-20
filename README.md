@@ -27,20 +27,75 @@ scanify --aggressive --bent --dusty input.pdf
 
 ## Installation
 
-### Homebrew
+### macOS (Homebrew)
 
 ```bash
 brew tap Francium-Tech/tap
 brew install scanify
 ```
 
-### From Source
+### macOS (From Source)
 
 ```bash
 git clone https://github.com/Francium-Tech/scanify.git
 cd scanify
 swift build -c release
 cp .build/release/scanify /usr/local/bin/
+```
+
+### Linux (From Source)
+
+**Ubuntu/Debian:**
+```bash
+# Install Swift (if not already installed)
+# See https://swift.org/download for the latest version
+wget https://download.swift.org/swift-5.9-release/ubuntu2204/swift-5.9-RELEASE/swift-5.9-RELEASE-ubuntu22.04.tar.gz
+tar xzf swift-5.9-RELEASE-ubuntu22.04.tar.gz
+sudo mv swift-5.9-RELEASE-ubuntu22.04 /opt/swift
+echo 'export PATH=/opt/swift/usr/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
+
+# Install dependencies
+sudo apt-get update
+sudo apt-get install -y poppler-utils imagemagick
+
+# Fix ImageMagick PDF policy (required)
+sudo sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-6/policy.xml
+
+# Build and install
+git clone https://github.com/Francium-Tech/scanify.git
+cd scanify
+swift build -c release
+sudo cp .build/release/scanify /usr/local/bin/
+```
+
+**Fedora/RHEL:**
+```bash
+# Install dependencies
+sudo dnf install poppler-utils ImageMagick
+
+# Fix ImageMagick PDF policy
+sudo sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-6/policy.xml
+
+# Then follow the build steps above
+```
+
+**Arch Linux:**
+```bash
+# Install dependencies
+sudo pacman -S poppler imagemagick
+
+# Then follow the build steps above
+```
+
+### Docker
+
+```bash
+# Build the image
+docker build -t scanify .
+
+# Run
+docker run --rm -v $(pwd):/data scanify /data/input.pdf /data/output.pdf
 ```
 
 ## Usage
@@ -110,7 +165,15 @@ Adds random artifacts to simulate a dirty scanner:
 
 ## Requirements
 
-- macOS 12.0 or later
+### macOS
+- macOS 12.0 (Monterey) or later
+- No additional dependencies (uses native PDFKit and CoreImage)
+
+### Linux
+- Swift 5.9+
+- poppler-utils (provides `pdftoppm` and `pdfinfo`)
+- ImageMagick 6 or 7 (provides `convert` and `identify`)
+- ImageMagick PDF policy must allow read/write (see installation instructions)
 
 ## License
 

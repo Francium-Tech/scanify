@@ -6,7 +6,7 @@ struct Scanify: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "scanify",
         abstract: "Transform PDFs to look like scanned documents",
-        version: "1.0.0"
+        version: "1.1.0"
     )
 
     @Flag(name: .long, help: "Apply aggressive scan effects (more noise, rotation, artifacts)")
@@ -48,7 +48,7 @@ struct Scanify: ParsableCommand {
         }
 
         // Process the PDF
-        let processor = PDFProcessor()
+        let processor = createPDFProcessor()
         var preset: ScanPreset = aggressive ? .aggressive : .default
         preset.applyWarp = bent
         preset.applyDust = dusty
