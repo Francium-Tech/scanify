@@ -1,6 +1,8 @@
 # Scanify
 
-Transform PDF documents to look like scanned documents.
+A CLI tool that transforms PDFs to look like scanned documents.
+
+Ever been asked to "print, sign, and scan" a document? Sometimes you just need a PDF that looks like it passed through a physical scanner — with all the subtle imperfections that implies.
 
 ## Examples
 
