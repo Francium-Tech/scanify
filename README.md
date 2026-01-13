@@ -8,7 +8,7 @@ Ever been asked to "print, sign, and scan" a document? Sometimes you just need a
 
 ### Original
 <p align="center">
-<img src="docs/sample.png" width="600" style="border: 1px dashed #999"/>
+<img src="docs/sample.png" width="600"/>
 </p>
 
 ### Default Scan
@@ -16,7 +16,7 @@ Ever been asked to "print, sign, and scan" a document? Sometimes you just need a
 scanify input.pdf
 ```
 <p align="center">
-<img src="docs/sample_scanned.png" width="600" style="border: 1px dashed #999"/>
+<img src="docs/sample_scanned.png" width="600"/>
 </p>
 
 ### All Effects
@@ -24,7 +24,7 @@ scanify input.pdf
 scanify --aggressive --bent --dusty input.pdf
 ```
 <p align="center">
-<img src="docs/sample_dusty_bent_aggressive.png" width="600" style="border: 1px dashed #999"/>
+<img src="docs/sample_dusty_bent_aggressive.png" width="600"/>
 </p>
 
 ## Installation
