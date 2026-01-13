@@ -24,7 +24,7 @@ scanify input.pdf
 scanify --aggressive --bent --dusty input.pdf
 ```
 <p align="center">
-<img src="docs/sample_all.png" width="600" style="border: 1px dashed #999"/>
+<img src="docs/sample_dusty_bent_aggressive.png" width="600" style="border: 1px dashed #999"/>
 </p>
 
 ## Installation
