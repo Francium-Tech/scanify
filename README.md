@@ -4,6 +4,11 @@ A CLI tool that transforms PDFs to look like scanned documents.
 
 Ever been asked to "print, sign, and scan" a document? Sometimes you just need a PDF that looks like it passed through a physical scanner — with all the subtle imperfections that implies.
 
+# Demo
+
+https://github.com/user-attachments/assets/4f8f41c4-f6c7-4b6f-93f0-6b2abd662856
+
+
 ## Examples
 
 ### Original
